@@ -1,0 +1,300 @@
+LoginPage.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using OpenQA.Selenium;
+using OpenQA.Selenium.IE;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.Support.UI;
+using System.Threading;
+
+namespace GMailPageObjectTestProj.Pages
+{
+    class LoginPage
+    {
+        //https://www.nhs.uk/Personalisation/Login.aspx
+
+        IWebDriver webDriver;
+
+        public LoginPage(IWebDriver webDriver)
+        {
+            this.webDriver = webDriver;
+        }
+
+
+        #region Objects
+
+        private IWebElement EmailTextBox
+        {
+            get
+            {
+                //return webDriver.FindElement(By.Id("ctl00$PlaceHolderMain$Login1$LoginControlExtender1$lgNHS$bc8572f1-f95f-4ea9-9d58-8a2e551c998e"));
+
+                //return webDriver.FindElement(By.XPath("//*[contains(@id, 'ctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHS')]"));
+                //return webDriver.FindElement(By.ClassName("_2zrpKA"));
+                return webDriver.FindElement(By.XPath("/html/body/div/div/div[1]/div/div/div[2]/div/form/div[1]/input"));
+                // _2zrpKA
+                /// html / body / div / div / div[1] / div / div / div[2] / div / form / div[1] / input
+                //ctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHS_bc8572f1-f95f-4ea9-9d58-8a2e551c998e
+                //ctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHS_50d59d7a-87f5-43be-a737-74d170063550
+            }
+        }
+
+        private IWebElement PasswordTextBox
+        {
+            get
+            {
+                // _2zrpKA _3v41xv
+               // return webDriver.FindElement(By.ClassName("_2zrpKA _3v41xv"));
+                return webDriver.FindElement(By.XPath("/html/body/div/div/div[1]/div/div/div[2]/div/form/div[2]/input"));
+                //return webDriver.FindElement(By.Id("ctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHSctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHS_Password_Password"));
+                //return webDriver.FindElement(By.XPath("//*[contains(@id, 'ctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHS')]"));
+            }
+        }
+
+        private IWebElement LogInButton
+        {
+            get
+            {
+                //_2AkmmA _1LctnI _7UHT_c
+                return webDriver.FindElement(By.XPath("/html/body/div/div/div[1]/div/div/div[2]/div/form/div[3]/button"));
+                //return webDriver.FindElement(By.Id("ctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHS_LoginButton"));
+                //ctl00_PlaceHolderMain_Login1_LoginControlExtender1_lgNHS_LoginButton
+            }
+        }
+
+        #endregion
+
+        #region Methods
+
+        public string LoginToNHS(string email, string password)
+        {
+           
+                EmailTextBox.SendKeys(email);
+                Thread.Sleep(5);
+                PasswordTextBox.SendKeys(password);
+                Thread.Sleep(5);
+                string loginPageTitle = webDriver.Title;
+                LogInButton.Click();
+                Thread.Sleep(5);
+                return loginPageTitle;
+           
+        } 
+        #endregion
+    }
+}
+
+HomePage.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using OpenQA.Selenium;
+using OpenQA.Selenium.IE;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.Support.UI;
+
+namespace GMailPageObjectTestProj.Pages
+{
+    class HomePage
+    {
+        IWebDriver webDriver;
+
+        public HomePage(IWebDriver webDriver)
+        {
+            this.webDriver = webDriver;
+        }
+
+        #region Objects
+        #endregion
+
+        #region Methods
+        public string getHomePageTitle()
+        {
+            string homePageTitle = webDriver.Title;
+            return homePageTitle;
+        }
+        #endregion
+    }
+}
+
+
+
+LoginTest.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using OpenQA.Selenium;
+using OpenQA.Selenium.IE;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.Support.UI;
+
+using System.Threading;
+using System.IO;
+using System.Configuration;
+
+using NUnit.Framework;
+using GMailPageObjectTestProj.Pages;
+using GMailPageObjectTestProj.ExcelFIle;
+using GMailPageObjectTestProj.TextFile;
+
+namespace GMailPageObjectTestProj
+{
+    class GMailLoginTest
+    {
+        IWebDriver webDriver;
+        
+        LoginPage loginPage;
+        HomePage homePage;
+
+        string webSiteURL;
+
+        [SetUp]
+        public void InitializeBrowser()
+        {
+            //webDriver = new ChromeDriver(@"C:\SeleniumDrivers");
+            webDriver = new FirefoxDriver(@"C:\SeleniumDrivers");
+            webDriver.Manage().Window.Maximize();
+
+            webSiteURL = ConfigurationManager.AppSettings["WebSiteURL"];
+
+            //webDriver.Navigate().GoToUrl("https://www.flipkart.com/account/login?ret=/");
+            webDriver.Navigate().GoToUrl(webSiteURL);
+            webDriver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(20);
+        }
+        [Test]
+        public void TestNHSLogin()
+        {
+            loginPage = new LoginPage(webDriver);
+            homePage = new HomePage(webDriver);
+            string loginPageTitle = loginPage.LoginToNHS("mytest@gmail.com", "test1234");
+            Console.WriteLine("Login page title is: " + loginPageTitle);
+            Assert.AreEqual("Here's the amazing journey that you've had with Flipkart", loginPageTitle);
+
+            ExcelFIle.WriteToExcelData writeExcelData = new WriteToExcelData();
+            writeExcelData.SaveDataToExcelFile(loginPageTitle);
+
+            //
+            WriteDataToTextFile textFile = new WriteDataToTextFile();
+            textFile.WriteSiteDataToTextFile(loginPageTitle);
+            
+        }
+        
+        [TearDown]
+        public void CloseBrowser()
+        {
+            Thread.Sleep(10);
+            //webDriver.Close();
+        }
+    }
+}
+
+
+WriteToExcelData.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+//using System.Windows.Forms;
+using System.Runtime.InteropServices;
+
+using Excel = Microsoft.Office.Interop.Excel;
+
+namespace GMailPageObjectTestProj.ExcelFIle
+{
+    class WriteToExcelData
+    {
+        public void SaveDataToExcelFile(string windowTitleName)
+        {
+            Excel.Application xlApp = new Microsoft.Office.Interop.Excel.Application();
+
+            if (xlApp == null)
+            {
+                Console.WriteLine("Excel is not properly installed!!");
+                return;
+            }
+
+            Excel.Workbook xlWorkBook;
+            Excel.Worksheet xlWorkSheet;
+
+            object misValue = System.Reflection.Missing.Value;
+
+            xlWorkBook = xlApp.Workbooks.Add(misValue);
+            xlWorkSheet = (Excel.Worksheet)xlWorkBook.Worksheets.get_Item(1);
+
+            xlWorkSheet.Cells[1, 1] = "TextName";
+            xlWorkSheet.Cells[2, 1] = windowTitleName;
+
+            xlWorkBook.SaveAs(@"C:\SampleTestExcel\webtest.xls", Excel.XlFileFormat.xlWorkbookNormal, misValue, misValue, misValue, misValue, Excel.XlSaveAsAccessMode.xlExclusive, misValue, misValue, misValue, misValue, misValue);
+
+            xlWorkBook.Close(true, misValue, misValue);
+            xlApp.Quit();
+
+            Marshal.ReleaseComObject(xlWorkSheet);
+            Marshal.ReleaseComObject(xlWorkBook);
+            Marshal.ReleaseComObject(xlApp);
+
+            Console.WriteLine(" 'webtest.xls' Excel file created in C:\\SampleTestExcel");
+        }
+    }
+}
+
+
+
+WriteDataToTextFile.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+
+namespace GMailPageObjectTestProj.TextFile
+{
+    class WriteDataToTextFile
+    {
+        public void WriteSiteDataToTextFile(string windowTitle)
+        {
+            // If techcoil.txt exists, seek to the end of the file,
+            // else create a new one.
+
+            FileStream fileStream = File.Open(@"C:\SampleTestExcel\sample.txt", FileMode.Append, FileAccess.Write);
+            // Encapsulate the filestream object in a StreamWriter instance.
+            StreamWriter fileWriter = new StreamWriter(fileStream);
+            
+            // Write the details to the file
+            fileWriter.WriteLine(windowTitle);
+            fileWriter.Flush();
+            fileWriter.Close();
+        }
+    }
+}
+
+
+
+App.config
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <appSettings>
+    <add key="WebSiteURL" value="https://www.flipkart.com/account/login?ret=/"/>
+    <add key="Browser" value="Firefox"/>
+  </appSettings>
+</configuration>
+
+
+
